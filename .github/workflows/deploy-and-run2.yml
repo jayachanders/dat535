@@ -13,15 +13,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Virtual Environment
+        run: |
+          # Add the virtual environment to PATH for all subsequent steps
+          echo "/home/ubuntu/spark-env/bin" >> $GITHUB_PATH
+          echo "Virtual environment bin added to PATH"
+
+      - name: Install Dependencies
+        run: |
+          # Upgrade pip and install required packages
+          python -m pip install --upgrade pip
+          pip install findspark pyspark pandas numpy
+          echo "Dependencies installed successfully"
+
       - name: Run Spark Pipeline
         env:
           SPARK_HOME: /opt/spark
-          # Define the path to your virtualenv here for easy updates
-          PYTHON_PATH: /home/ubuntu/spark-env/bin/python 
+          PYSPARK_PYTHON: /home/ubuntu/spark-env/bin/python
         run: |
-          # 1. Ensure absolute paths are used
-          # 2. Use the virtual environment Python directly
-          # 3. $GITHUB_WORKSPACE is where the code was checked out
-          
           echo "Starting Pipeline execution..."
-          $PYTHON_PATH $GITHUB_WORKSPACE/process_data.py
+          echo "Python location: $(which python)"
+          echo "Python version: $(python --version)"
+          python $GITHUB_WORKSPACE/process_data.py
