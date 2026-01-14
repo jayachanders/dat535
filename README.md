@@ -1,15 +1,16 @@
 # DAT535 Spark Data Pipelines
 
-Production-ready Spark pipelines demonstrating the Medallion Architecture (Bronze → Silver → Gold) and MapReduce patterns on a private OpenStack cluster.
+Production-ready Spark pipelines demonstrating the Medallion Architecture (Bronze → Silver → Gold), MapReduce patterns, and performance optimization on a private OpenStack cluster.
 
 ## Overview
 
-This project contains **two complementary pipelines** that demonstrate enterprise data processing patterns using PySpark with automated CI/CD deployment via GitHub Actions:
+This project contains **three complementary pipelines** that demonstrate enterprise data processing patterns using PySpark with automated CI/CD deployment via GitHub Actions:
 
 1. **Data Pipeline** (`data_pipeline.py`): Basic Medallion Architecture implementation with customer/transaction/product data
 2. **MapReduce Pipeline** (`mapreduce_pipeline.py`): Advanced event stream processing demonstrating MapReduce patterns
+3. **Performance Pipeline** (`performance_pipeline.py`): Performance optimization techniques with window functions, caching, and benchmarking
 
-Both pipelines run automatically on every push to the `main` branch.
+All pipelines run automatically on every push to the `main` branch.
 
 ## Pipelines
 
@@ -73,12 +74,52 @@ Gold Layer (Analytics)
 - Join operations
 - Map-side and Reduce-side processing
 
+### 3. Performance Pipeline (Advanced)
+
+Demonstrates Spark performance optimization techniques and benchmarking.
+
+**Data Location**: `~/performance-pipeline-data/`
+
+#### Architecture Layers
+
+```text
+Bronze Layer (Raw Sessions)
+    └── sessions.parquet              # Raw session event data
+
+Silver Layer (Enriched)
+    └── enriched_sessions.parquet     # Advanced transformations with window functions
+
+Gold Layer (Analytics)
+    ├── user_analytics.parquet        # User behavior metrics
+    ├── session_analytics.parquet     # Session-level insights with broadcast joins
+    ├── daily_metrics/                # Date-partitioned temporal analytics
+    │   ├── event_date=2026-01-01/
+    │   ├── event_date=2026-01-02/
+    │   └── ...
+    └── cohort_analysis.parquet       # User cohort retention analysis
+
+Benchmarks
+    └── performance_metrics.parquet   # Pipeline performance measurements
+```
+
+**Dataset**: 10K sessions, 2K users, 30 days of data
+
+**Performance Features**:
+- Window functions (lag, running totals, moving averages, rank)
+- Broadcast join optimization for small dimensions
+- Date partitioning for efficient queries
+- Caching strategy demonstrations
+- Query optimization benchmarks (filter combining, join strategies)
+- Performance metric collection
+
 ## Features
 
-- **Automated Data Generation**: Creates realistic sample datasets (10K customers, 50K transactions, 200 products)
+- **Automated Data Generation**: Creates realistic sample datasets
 - **Data Quality Checks**: Null value detection, duplicate analysis, completeness reports
 - **Data Enrichment**: Calculated fields, customer segmentation, temporal features
 - **Business Analytics**: Comprehensive aggregations for business insights
+- **Performance Optimization**: Window functions, broadcast joins, caching strategies
+- **Performance Benchmarking**: Automated performance comparison tests
 - **CI/CD Integration**: Automated deployment and execution via GitHub Actions
 - **Logging**: Comprehensive logging at every pipeline stage
 
@@ -90,8 +131,8 @@ Every push to the `main` branch triggers:
 
 1. **Environment Setup**: Ensures virtual environment with all dependencies
 2. **Code Deployment**: Syncs latest code to OpenStack VM
-3. **Pipeline Execution**: Runs the complete Spark pipeline
-4. **Data Output**: Stores results in `~/pipeline-data/`
+3. **Pipeline Execution**: Runs all three Spark pipelines sequentially
+4. **Data Output**: Stores results in respective directories
 
 ### Workflow File
 
@@ -122,8 +163,11 @@ python data_pipeline.py
 # OR run the MapReduce pipeline
 python mapreduce_pipeline.py
 
-# OR run both pipelines sequentially
-python run_pipeline.py both
+# OR run the performance pipeline
+python performance_pipeline.py
+
+# OR run all pipelines sequentially
+python run_pipeline.py all
 ```
 
 ### Using the Pipeline Runner
@@ -137,8 +181,11 @@ python run_pipeline.py data
 # Run only the MapReduce pipeline
 python run_pipeline.py mapreduce
 
-# Run both pipelines
-python run_pipeline.py both
+# Run only the performance pipeline
+python run_pipeline.py performance
+
+# Run all pipelines
+python run_pipeline.py all
 ```
 
 ### Configuration
@@ -162,19 +209,36 @@ config.num_users = 5000
 config.num_products = 500
 config.data_dir = "~/mapreduce-pipeline-data"
 ```
-config.num_products = 200
-config.data_dir = "~/pipeline-data"  # Output location
+
+**Performance Pipeline** (`PerformancePipelineConfig`):
+```python
+config = PerformancePipelineConfig()
+config.num_sessions = 10000       # Session data size
+config.num_users = 2000
+config.days_of_data = 30
+config.data_dir = "~/performance-pipeline-data"
 ```
 
 ## Data Output
 
-All data is stored in Parquet format at:
+All data is stored in Parquet format:
 
 ```tree
-~/pipeline-data/
-├── bronze/       # Raw ingested data
-├── silver/       # Cleaned and enriched data
-└── gold/         # Business-level aggregations
+~/pipeline-data/              # Basic pipeline output
+├── bronze/
+├── silver/
+└── gold/
+
+~/mapreduce-pipeline-data/    # MapReduce pipeline output
+├── bronze/
+├── silver/
+└── gold/
+
+~/performance-pipeline-data/  # Performance pipeline output
+├── bronze/
+├── silver/
+├── gold/
+└── benchmarks/              # Performance metrics
 ```
 
 ## Pipeline Execution Flow
@@ -280,6 +344,10 @@ This pipeline demonstrates:
 - ✅ Medallion Architecture implementation
 - ✅ Data quality and governance practices  
 - ✅ Spark DataFrame API and SQL
+- ✅ MapReduce patterns and distributed processing
+- ✅ Window functions and advanced analytics
+- ✅ Performance optimization techniques (caching, broadcast joins, partitioning)
+- ✅ Performance benchmarking and monitoring
 - ✅ CI/CD for data pipelines
 - ✅ Production logging and monitoring
 - ✅ File format optimization (Parquet)

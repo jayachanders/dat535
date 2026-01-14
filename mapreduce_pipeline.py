@@ -167,6 +167,8 @@ class MapReducePipeline:
                 event['_source'] = 'event_api'
                 event['_status'] = 'valid'
                 event['_bronze_layer'] = True
+                # Add amount if it exists, otherwise set to None
+                event['amount'] = event.get('amount', None)
                 return event
             except Exception as e:
                 return {
@@ -175,7 +177,8 @@ class MapReducePipeline:
                     '_source': 'event_api',
                     '_status': 'parse_error',
                     '_error_message': str(e),
-                    '_bronze_layer': True
+                    '_bronze_layer': True,
+                    'amount': None  # Placeholder for amount in case of error
                 }
         
         # Apply map transformation

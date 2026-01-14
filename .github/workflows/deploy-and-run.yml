@@ -58,6 +58,21 @@ jobs:
           
           echo "✓ MapReduce pipeline completed!"
           echo "Data location: ~/mapreduce-pipeline-data/"
+
+      - name: Run Performance Pipeline (Optimizations)
+        env:
+          SPARK_HOME: /opt/spark
+          JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+        run: |
+          # Activate the environment
+          source ~/spark-env/bin/activate
+          
+          # Run the performance optimization pipeline
+          echo "=== Starting Performance Optimization Pipeline ==="
+          python $GITHUB_WORKSPACE/performance_pipeline.py
+          
+          echo "✓ Performance pipeline completed!"
+          echo "Data location: ~/performance-pipeline-data/"
           
           echo ""
           echo "=== All Pipelines Completed Successfully ==="
