@@ -167,8 +167,14 @@ class MapReducePipeline:
                 event['_source'] = 'event_api'
                 event['_status'] = 'valid'
                 event['_bronze_layer'] = True
-                # Add amount if it exists, otherwise set to None
+                # Ensure all optional fields have default values
                 event['amount'] = event.get('amount', None)
+                event['quantity'] = event.get('quantity', None)
+                event['duration_seconds'] = event.get('duration_seconds', None)
+                event['product_id'] = event.get('product_id', None)
+                event['query'] = event.get('query', None)
+                event['page'] = event.get('page', None)
+                event['email'] = event.get('email', None)
                 return event
             except Exception as e:
                 return {
@@ -178,7 +184,13 @@ class MapReducePipeline:
                     '_status': 'parse_error',
                     '_error_message': str(e),
                     '_bronze_layer': True,
-                    'amount': None  # Placeholder for amount in case of error
+                    'amount': None,
+                    'quantity': None,
+                    'duration_seconds': None,
+                    'product_id': None,
+                    'query': None,
+                    'page': None,
+                    'email': None
                 }
         
         # Apply map transformation
@@ -242,10 +254,19 @@ class MapReducePipeline:
             .withColumn("timestamp", to_timestamp(col("timestamp"))) \
             .withColumn("user_id", col("user_id").cast("integer")) \
             .withColumn("event_date", to_date(col("timestamp"))) \
-            .withColumn("event_hour", hour(col("timestamp"))) \
-            .withColumn("amount", col("amount").cast("double")) \
-            .withColumn("quantity", col("quantity").cast("integer")) \
-            .withColumn("duration_seconds", col("duration_seconds").cast("integer")) \
+            .withColumn("event_hour", hour(col("timestamp")))
+        
+        # Cast optional numeric columns if they exist (handle None values)
+        if "amount" in valid_df.columns:
+            silver_df = silver_df.withColumn("amount", col("amount").cast("double"))
+        
+        if "quantity" in valid_df.columns:
+            silver_df = silver_df.withColumn("quantity", col("quantity").cast("integer"))
+        
+        if "duration_seconds" in valid_df.columns:
+            silver_df = silver_df.withColumn("duration_seconds", col("duration_seconds").cast("integer"))
+        
+        silver_df = silver_df \
             .filter(col("user_id").isNotNull()) \
             .withColumn("_silver_processed_timestamp", current_timestamp()) \
             .drop("_ingestion_timestamp", "_source", "_status", "_bronze_layer")
