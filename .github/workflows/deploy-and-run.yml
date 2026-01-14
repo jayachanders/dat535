@@ -12,13 +12,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Python Environment
+        run: |
+          # Use absolute path to ensure we're modifying the correct venv
+          /home/ubuntu/spark-env/bin/python -m pip install --upgrade pip
+          /home/ubuntu/spark-env/bin/pip install findspark pyspark pandas numpy matplotlib seaborn
+          echo "Dependencies installed/verified in virtual environment"
+
       - name: Run Spark Pipeline
         env:
           SPARK_HOME: /opt/spark
+          JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
         run: |
-          # 1. Activate (Required at the top of every 'run' block that needs it)
+          # Activate the environment
           source ~/spark-env/bin/activate
-
-          # 2. Run your code
-          echo "Environment activated: $(which python)"
+          
+          # Verify setup
+          echo "Python: $(which python)"
+          echo "Python version: $(python --version)"
+          echo "SPARK_HOME: $SPARK_HOME"
+          
+          # Run the pipeline
           python $GITHUB_WORKSPACE/process_data.py
