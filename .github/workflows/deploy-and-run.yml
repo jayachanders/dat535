@@ -24,6 +24,14 @@ jobs:
           echo "Python: $(which python)"
           echo "Python version: $(python --version)"
           echo "SPARK_HOME: $SPARK_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
           
           # Run the pipeline
-          python $GITHUB_WORKSPACE/process_data.py
+          # python $GITHUB_WORKSPACE/process_data.py
+          
+          # Run the data pipeline
+          echo "Starting data pipeline execution..."
+          python $GITHUB_WORKSPACE/data_pipeline.py
+          
+          echo "Pipeline execution completed!"
+          echo "Data location: ~/pipeline-data/"
