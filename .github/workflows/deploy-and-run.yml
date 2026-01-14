@@ -12,18 +12,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Prepare Environment
-        run: |
-          echo "Verifying virtual environment and dependencies..."
-          # Ensure pip is up to date and dependencies are installed in the venv
-          /home/ubuntu/spark-env/bin/python -m pip install --upgrade pip
-          /home/ubuntu/spark-env/bin/python -m pip install findspark pyspark pandas
-
       - name: Run Spark Pipeline
         env:
           SPARK_HOME: /opt/spark
-          PYSPARK_PYTHON: /home/ubuntu/spark-env/bin/python
-          PYTHON_PATH: /home/ubuntu/spark-env/bin/python 
         run: |
-          echo "Starting Pipeline execution using $PYTHON_PATH"
-          $PYTHON_PATH $GITHUB_WORKSPACE/process_data.py
+          # 1. Activate (Required at the top of every 'run' block that needs it)
+          source ~/spark-env/bin/activate
+
+          # 2. Run your code
+          echo "Environment activated: $(which python)"
+          python $GITHUB_WORKSPACE/process_data.py
