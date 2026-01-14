@@ -1,16 +1,27 @@
-# DAT535 Data Pipeline
+# DAT535 Spark Data Pipelines
 
-A production-ready Spark data pipeline implementing the Medallion Architecture (Bronze → Silver → Gold).
+Production-ready Spark pipelines demonstrating the Medallion Architecture (Bronze → Silver → Gold) and MapReduce patterns on a private OpenStack cluster.
 
 ## Overview
 
-This pipeline demonstrates enterprise data processing patterns using PySpark on a private OpenStack cluster with automated deployment via GitHub Actions.
+This project contains **two complementary pipelines** that demonstrate enterprise data processing patterns using PySpark with automated CI/CD deployment via GitHub Actions:
 
-## Architecture
+1. **Data Pipeline** (`data_pipeline.py`): Basic Medallion Architecture implementation with customer/transaction/product data
+2. **MapReduce Pipeline** (`mapreduce_pipeline.py`): Advanced event stream processing demonstrating MapReduce patterns
 
-### Medallion Architecture Layers
+Both pipelines run automatically on every push to the `main` branch.
 
-```
+## Pipelines
+
+### 1. Data Pipeline (Basic)
+
+Implements classic data warehouse patterns with structured data.
+
+**Data Location**: `~/pipeline-data/`
+
+#### Architecture Layers
+
+```text
 Bronze Layer (Raw Data)
     ├── customers.parquet      # Raw customer data
     ├── transactions.parquet   # Raw transaction logs  
@@ -28,6 +39,39 @@ Gold Layer (Business Aggregations)
     ├── device_analytics.parquet      # Device/browser statistics
     └── product_analytics.parquet     # Product inventory analysis
 ```
+
+**Dataset**: 10K customers, 50K transactions, 200 products
+
+### 2. MapReduce Pipeline (Advanced)
+
+Demonstrates MapReduce patterns with event stream processing.
+
+**Data Location**: `~/mapreduce-pipeline-data/`
+
+#### Architecture Layers
+
+```text
+Bronze Layer (Raw Events)
+    └── raw_events.parquet            # Raw event logs with parse error handling
+
+Silver Layer (Cleaned Events)
+    └── cleaned_events.parquet        # Typed and validated events
+
+Gold Layer (Analytics)
+    ├── user_engagement.parquet       # User activity and engagement metrics
+    ├── event_funnel.parquet          # Conversion funnel analysis
+    ├── device_location_analytics.parquet  # Device-location combinations
+    ├── revenue_analytics.parquet     # Purchase and revenue metrics
+    └── hourly_patterns.parquet       # Temporal activity patterns
+```
+
+**Dataset**: 100K events, 5K users, 500 products
+
+**MapReduce Patterns Demonstrated**:
+- Word Count (classic MapReduce)
+- Group By Key (aggregations)
+- Join operations
+- Map-side and Reduce-side processing
 
 ## Features
 
@@ -62,7 +106,7 @@ See [`.github/workflows/deploy-and-run.yml`](.github/workflows/deploy-and-run.ym
 - Java 8
 - Virtual environment with PySpark, findspark
 
-### Setup
+### Running Individual Pipelines
 
 ```bash
 # Clone the repository
@@ -72,18 +116,52 @@ cd dat535
 # Activate Spark environment
 source ~/spark-env/bin/activate
 
-# Run the pipeline
+# Run the basic data pipeline
 python data_pipeline.py
+
+# OR run the MapReduce pipeline
+python mapreduce_pipeline.py
+
+# OR run both pipelines sequentially
+python run_pipeline.py both
+```
+
+### Using the Pipeline Runner
+
+The `run_pipeline.py` script allows flexible execution:
+
+```bash
+# Run only the basic data pipeline
+python run_pipeline.py data
+
+# Run only the MapReduce pipeline
+python run_pipeline.py mapreduce
+
+# Run both pipelines
+python run_pipeline.py both
 ```
 
 ### Configuration
 
-The pipeline uses `DataPipelineConfig` class for configuration:
+Each pipeline has its own configuration class:
 
+**Data Pipeline** (`DataPipelineConfig`):
 ```python
 config = DataPipelineConfig()
 config.num_customers = 10000      # Adjust dataset size
 config.num_transactions = 50000
+config.num_products = 200
+config.data_dir = "~/pipeline-data"
+```
+
+**MapReduce Pipeline** (`MapReducePipelineConfig`):
+```python
+config = MapReducePipelineConfig()
+config.num_events = 100000        # Event stream size
+config.num_users = 5000
+config.num_products = 500
+config.data_dir = "~/mapreduce-pipeline-data"
+```
 config.num_products = 200
 config.data_dir = "~/pipeline-data"  # Output location
 ```

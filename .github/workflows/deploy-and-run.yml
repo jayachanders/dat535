@@ -28,10 +28,36 @@ jobs:
           
           # Run the pipeline
           # python $GITHUB_WORKSPACE/process_data.py
+
+      - name: Run Data Pipeline (Basic)
+        env:
+          SPARK_HOME: /opt/spark
+          JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+        run: |
+          # Activate the environment
+          source ~/spark-env/bin/activate
           
-          # Run the data pipeline
-          echo "Starting data pipeline execution..."
+          # Run the basic data pipeline
+          echo "=== Starting Basic Data Pipeline ==="
           python $GITHUB_WORKSPACE/data_pipeline.py
           
-          echo "Pipeline execution completed!"
+          echo "✓ Basic pipeline completed!"
           echo "Data location: ~/pipeline-data/"
+
+      - name: Run MapReduce Pipeline (Advanced)
+        env:
+          SPARK_HOME: /opt/spark
+          JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+        run: |
+          # Activate the environment
+          source ~/spark-env/bin/activate
+          
+          # Run the MapReduce pipeline
+          echo "=== Starting MapReduce Pipeline ==="
+          python $GITHUB_WORKSPACE/mapreduce_pipeline.py
+          
+          echo "✓ MapReduce pipeline completed!"
+          echo "Data location: ~/mapreduce-pipeline-data/"
+          
+          echo ""
+          echo "=== All Pipelines Completed Successfully ==="
