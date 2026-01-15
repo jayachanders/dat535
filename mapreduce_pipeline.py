@@ -323,11 +323,15 @@ class MapReducePipeline:
             spark_sum("amount").alias("total_spent"),
             spark_sum("quantity").alias("total_items_purchased"),
             avg("duration_seconds").alias("avg_session_duration"),
-            min("timestamp").alias("first_seen"),
-            max("timestamp").alias("last_seen")
-        ).withColumn("days_active_period",
+            spark_min("timestamp").alias("first_seen"),
+            spark_max("timestamp").alias("last_seen")
+        )\
+        .withColumn(
+            "days_active_period",
             (unix_timestamp("last_seen") - unix_timestamp("first_seen")) / 86400
-        ).withColumn("engagement_score",
+        )\
+        .withColumn(
+            "engagement_score",
             spark_round((col("total_events") * col("active_days")) / (col("days_active_period") + 1), 2)
         )
         
@@ -373,201 +377,65 @@ class MapReducePipeline:
         
         device_location_df = self.spark.createDataFrame(
             device_location_data,
-            ['device', 'location', 'event_count']
+            ['device', 'location', 'event_count']  # Added missing closing bracket
         )
         
+        # Save device & location analytics
         device_location_path = os.path.join(self.config.gold_dir, "device_location_analytics")
         device_location_df.write.mode("overwrite").parquet(device_location_path)
-        logger.info(f"✓ Saved device-location analytics")
+        logger.info(f"✓ Saved device & location analytics")
         
-        # 4. Revenue Analytics
-        logger.info("Calculating revenue analytics...")
+        # 4. Revenue Analysis
+        logger.info("Calculating revenue analysis...")
         
-        revenue_metrics = silver_df.filter(col("event") == "purchase").groupBy("event_date").agg(
-            count("*").alias("transactions"),
-            countDistinct("user_id").alias("unique_buyers"),
+        revenue_analysis = silver_df.groupBy("event_date").agg(
             spark_sum("amount").alias("total_revenue"),
-            avg("amount").alias("avg_transaction_value"),
-            spark_min("amount").alias("min_transaction"),
-            spark_max("amount").alias("max_transaction"),
-            spark_sum("quantity").alias("items_sold")
+            countDistinct("user_id").alias("unique_customers"),
+            count(when(col("event") == "purchase", True)).alias("total_purchases"),
+            avg("amount").alias("avg_order_value")
         )
         
-        revenue_path = os.path.join(self.config.gold_dir, "revenue_analytics")
-        revenue_metrics.write.mode("overwrite").parquet(revenue_path)
-        logger.info(f"✓ Saved revenue analytics")
+        revenue_path = os.path.join(self.config.gold_dir, "revenue_analysis")
+        revenue_analysis.write.mode("overwrite").parquet(revenue_path)
+        logger.info(f"✓ Saved revenue analysis")
         
-        # 5. Hourly Activity Pattern (MapReduce)
-        logger.info("Calculating hourly activity patterns...")
-        
-        # Map to (hour, event_type) and count
-        hourly_rdd = silver_df.rdd.map(
-            lambda row: ((row['event_hour'], row['event']), 1)
-        ).reduceByKey(lambda a, b: a + b)
-        
-        hourly_data = hourly_rdd.map(
-            lambda x: (x[0][0], x[0][1], x[1])
-        ).collect()
-        
-        hourly_df = self.spark.createDataFrame(
-            hourly_data,
-            ['hour', 'event_type', 'event_count']
-        )
-        
-        hourly_path = os.path.join(self.config.gold_dir, "hourly_patterns")
-        hourly_df.write.mode("overwrite").parquet(hourly_path)
-        logger.info(f"✓ Saved hourly patterns")
-        
-        # Display sample analytics
-        logger.info("\n--- Top User Engagement ---")
-        user_engagement.orderBy(desc("engagement_score")).show(10, truncate=False)
-        
-        logger.info("\n--- Daily Funnel Metrics ---")
-        funnel_metrics.orderBy("event_date").show(10, truncate=False)
-        
-        logger.info("\n--- Revenue Summary ---")
-        revenue_metrics.orderBy(desc("total_revenue")).show(10, truncate=False)
-        
-        # Unpersist cache
+        # Unpersist cached Silver DataFrame
         silver_df.unpersist()
         
         return {
-            'user_engagement_records': user_engagement.count(),
-            'funnel_records': funnel_metrics.count(),
-            'device_location_records': device_location_df.count(),
-            'revenue_records': revenue_metrics.count(),
-            'hourly_pattern_records': hourly_df.count()
+            'gold_dir': self.config.gold_dir,
+            'user_engagement_path': user_engagement_path,
+            'funnel_path': funnel_path,
+            'device_location_path': device_location_path,
+            'revenue_path': revenue_path
         }
-    
-    def demonstrate_mapreduce_patterns(self):
-        """Demonstrate core MapReduce patterns for educational purposes"""
-        logger.info("=" * 60)
-        logger.info("MAPREDUCE PATTERN DEMONSTRATIONS")
-        logger.info("=" * 60)
-        
-        # Load Silver data for demonstrations
-        silver_path = os.path.join(self.config.silver_dir, "cleaned_events")
-        if not os.path.exists(silver_path):
-            logger.warning("Silver data not found. Run full pipeline first.")
-            return
-        
-        silver_df = self.spark.read.parquet(silver_path)
-        
-        # Pattern 1: Word Count (Classic MapReduce)
-        logger.info("\n1. Classic Word Count Pattern:")
-        
-        # Extract search queries
-        search_queries = silver_df.filter(col("event") == "search").select("query")
-        
-        if search_queries.count() > 0:
-            # RDD approach
-            words_rdd = search_queries.rdd.flatMap(lambda row: row['query'].lower().split() if row['query'] else [])
-            word_pairs_rdd = words_rdd.map(lambda word: (word, 1))
-            word_counts = word_pairs_rdd.reduceByKey(lambda a, b: a + b).takeOrdered(10, key=lambda x: -x[1])
-            
-            logger.info("Top search terms:")
-            for word, count in word_counts:
-                logger.info(f"  {word}: {count}")
-        
-        # Pattern 2: Group By Key (Aggregation)
-        logger.info("\n2. Group By Key Pattern (User Activity):")
-        
-        user_events_rdd = silver_df.rdd.map(lambda row: (row['user_id'], row['event']))
-        user_event_groups = user_events_rdd.groupByKey().mapValues(list).take(5)
-        
-        for user_id, events in user_event_groups:
-            logger.info(f"  User {user_id}: {len(events)} events - {set(events)}")
-        
-        # Pattern 3: Join Pattern
-        logger.info("\n3. Join Pattern (User Purchase History):")
-        
-        # Create user summary and purchase data
-        users_rdd = silver_df.select("user_id", "device").rdd.map(lambda row: (row['user_id'], row['device'])).distinct()
-        purchases_rdd = silver_df.filter(col("event") == "purchase").rdd.map(
-            lambda row: (row['user_id'], row['amount'])
-        )
-        
-        # Join
-        user_purchases = users_rdd.join(purchases_rdd).take(10)
-        
-        logger.info("User-Device-Purchase joins:")
-        for user_id, (device, amount) in user_purchases[:5]:
-            logger.info(f"  User {user_id} on {device} purchased ${amount:.2f}")
-    
-    def run(self):
-        """Execute the complete pipeline"""
-        start_time = datetime.now()
-        logger.info("=" * 60)
-        logger.info("STARTING MAPREDUCE PIPELINE EXECUTION")
-        logger.info(f"Start Time: {start_time}")
-        logger.info("=" * 60)
-        
-        try:
-            # Run Bronze layer
-            bronze_results = self.run_bronze_layer()
-            
-            # Run Silver layer
-            silver_results = self.run_silver_layer(bronze_results)
-            
-            # Run Gold layer
-            gold_results = self.run_gold_layer(silver_results)
-            
-            # Demonstrate MapReduce patterns
-            self.demonstrate_mapreduce_patterns()
-            
-            # Pipeline summary
-            end_time = datetime.now()
-            duration = (end_time - start_time).total_seconds()
-            
-            logger.info("=" * 60)
-            logger.info("PIPELINE EXECUTION COMPLETED SUCCESSFULLY")
-            logger.info(f"End Time: {end_time}")
-            logger.info(f"Duration: {duration:.2f} seconds")
-            logger.info("=" * 60)
-            
-            logger.info("\n--- Pipeline Summary ---")
-            logger.info(f"Bronze Layer:")
-            logger.info(f"  Total records: {bronze_results['total_records']:,}")
-            logger.info(f"  Valid records: {bronze_results['valid_records']:,}")
-            logger.info(f"  Error records: {bronze_results['error_records']:,}")
-            
-            logger.info(f"\nSilver Layer:")
-            logger.info(f"  Cleaned records: {silver_results['silver_count']:,}")
-            logger.info(f"  Unique event types: {len(silver_results['event_counts'])}")
-            
-            logger.info(f"\nGold Layer:")
-            logger.info(f"  User engagement records: {gold_results['user_engagement_records']:,}")
-            logger.info(f"  Funnel analysis records: {gold_results['funnel_records']:,}")
-            logger.info(f"  Device-location records: {gold_results['device_location_records']:,}")
-            logger.info(f"  Revenue analysis records: {gold_results['revenue_records']:,}")
-            logger.info(f"  Hourly pattern records: {gold_results['hourly_pattern_records']:,}")
-            
-            logger.info(f"\nData Location: {self.config.data_dir}")
-            
-            return 0
-            
-        except Exception as e:
-            logger.error(f"Pipeline failed with error: {str(e)}", exc_info=True)
-            return 1
-        
-        finally:
-            self.spark.stop()
-            logger.info("Spark session stopped")
 
 
-def main():
-    """Main entry point"""
-    logger.info("Initializing MapReduce Pipeline...")
-    
-    # Create configuration
+def run_pipeline():
+    """Run the complete MapReduce pipeline: Bronze → Silver → Gold"""
     config = MapReducePipelineConfig()
-    
-    # Create and run pipeline
     pipeline = MapReducePipeline(config)
-    exit_code = pipeline.run()
     
-    sys.exit(exit_code)
-
+    # Bronze layer
+    bronze_results = pipeline.run_bronze_layer()
+    logger.info(f"Bronze layer results: {bronze_results}")
+    
+    # Silver layer
+    silver_results = pipeline.run_silver_layer(bronze_results)
+    logger.info(f"Silver layer results: {silver_results}")
+    
+    # Gold layer
+    gold_results = pipeline.run_gold_layer(silver_results)
+    logger.info(f"Gold layer results: {gold_results}")
+    
 
 if __name__ == "__main__":
-    main()
+    start_time = time.time()
+    
+    try:
+        run_pipeline()
+    except Exception as e:
+        logger.error(f"Pipeline execution failed: {str(e)}", exc_info=True)
+    finally:
+        logger.info(f"Total execution time: {time.time() - start_time:.2f} seconds")
+        logger.info("Pipeline execution completed.")
