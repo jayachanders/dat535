@@ -3,7 +3,7 @@ name: Daily Data Pipeline
 on:
   schedule:
     # Run every day at midnight UTC
-    - cron: "20 * * * *" 
+    - cron: "35 * * * *" 
 
 jobs:
   run-pipeline:
