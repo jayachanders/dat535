@@ -11,6 +11,9 @@ from datetime import datetime, timedelta
 import random
 from typing import Dict, Any, List
 
+import findspark
+findspark.init()
+
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
     col, count, sum as spark_sum, avg, min as spark_min, max as spark_max,
@@ -20,9 +23,6 @@ from pyspark.sql.functions import (
 )
 from pyspark.sql.window import Window
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
-
-import findspark
-findspark.init()
 
 # Configure logging
 logging.basicConfig(

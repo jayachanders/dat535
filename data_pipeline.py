@@ -5,12 +5,13 @@ Converts the Lab 2 exploratory notebook into a production pipeline
 """
 
 import os
-import sys
-import json
 import logging
 from datetime import datetime, timedelta
 import random
 from typing import Dict, Any
+
+import findspark
+findspark.init()
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
@@ -18,9 +19,6 @@ from pyspark.sql.functions import (
     round as spark_round, when, lit, concat, desc, to_date
 )
 from pyspark.sql.types import StructType, StructField, IntegerType, StringType, DoubleType
-
-import findspark
-findspark.init()
 
 # Configure logging
 logging.basicConfig(

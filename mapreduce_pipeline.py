@@ -12,15 +12,15 @@ from datetime import datetime, timedelta
 import random
 from typing import List, Dict, Any
 
+import findspark
+findspark.init()
+
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
     col, count, sum as spark_sum, avg, min as spark_min, max as spark_max,
     round as spark_round, when, to_timestamp, to_date, hour, current_timestamp,
     unix_timestamp, countDistinct
 )
-
-import findspark
-findspark.init()
 
 # Configure logging
 logging.basicConfig(
