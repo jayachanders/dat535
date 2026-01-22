@@ -5,26 +5,24 @@ Demonstrates performance optimization, window functions, and production patterns
 """
 
 import os
-import sys
 import logging
 import time
 from datetime import datetime, timedelta
 import random
 from typing import Dict, Any, List
 
-import findspark
-findspark.init()
-
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
     col, count, sum as spark_sum, avg, min as spark_min, max as spark_max,
-    when, lit, desc, lag, row_number, rank, datediff, current_date,
+    when, desc, lag, row_number, rank, datediff,
     unix_timestamp, to_timestamp, to_date, hour, current_timestamp,
-    countDistinct, expr, broadcast
+    countDistinct, broadcast
 )
 from pyspark.sql.window import Window
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
-from pyspark import StorageLevel
+
+import findspark
+findspark.init()
 
 # Configure logging
 logging.basicConfig(
@@ -525,7 +523,7 @@ class PerformancePipeline:
             logger.info("\n--- Pipeline Summary ---")
             logger.info(f"Bronze Layer: {bronze_results['record_count']:,} records")
             logger.info(f"Silver Layer: {silver_results['silver_count']:,} enriched records")
-            logger.info(f"\nGold Layer:")
+            logger.info("\nGold Layer:")
             logger.info(f"  User Analytics: {gold_results['user_analytics_records']:,} records")
             logger.info(f"  Session Analytics: {gold_results['session_analytics_records']:,} records")
             logger.info(f"  Temporal Analytics: {gold_results['temporal_analytics_records']:,} records")
@@ -556,7 +554,8 @@ def main():
     pipeline = PerformancePipeline(config)
     exit_code = pipeline.run()
     
-    sys.exit(exit_code)
+    # Return the exit code instead of calling sys.exit())
+    return exit_code
 
 
 if __name__ == "__main__":

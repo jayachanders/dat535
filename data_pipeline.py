@@ -12,15 +12,15 @@ from datetime import datetime, timedelta
 import random
 from typing import Dict, Any
 
-import findspark
-findspark.init()
-
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
     col, count, sum as spark_sum, avg, min as spark_min, max as spark_max,
     round as spark_round, when, lit, concat, desc, to_date
 )
-from pyspark.sql.types import *
+from pyspark.sql.types import StructType, StructField, IntegerType, StringType, DoubleType
+
+import findspark
+findspark.init()
 
 # Configure logging
 logging.basicConfig(
@@ -265,7 +265,7 @@ class DataPipeline:
         
         # Active products only
         active_products = products_df \
-            .filter(col("is_active") == True) \
+            .filter(col("is_active")) \
             .filter(col("stock_quantity") > 0) \
             .withColumn("created_date", to_date(col("created_date")))
         
@@ -345,19 +345,19 @@ class DataPipeline:
         gold_base = self.config.gold_dir
         
         customer_analytics.write.mode("overwrite").parquet(os.path.join(gold_base, "customer_analytics"))
-        logger.info(f"✓ Saved customer analytics")
+        logger.info("✓ Saved customer analytics")
         
         category_analytics.write.mode("overwrite").parquet(os.path.join(gold_base, "category_analytics"))
-        logger.info(f"✓ Saved category analytics")
+        logger.info("✓ Saved category analytics")
         
         payment_analytics.write.mode("overwrite").parquet(os.path.join(gold_base, "payment_analytics"))
-        logger.info(f"✓ Saved payment analytics")
+        logger.info("✓ Saved payment analytics")
         
         device_analytics.write.mode("overwrite").parquet(os.path.join(gold_base, "device_analytics"))
-        logger.info(f"✓ Saved device analytics")
+        logger.info("✓ Saved device analytics")
         
         product_analytics.write.mode("overwrite").parquet(os.path.join(gold_base, "product_analytics"))
-        logger.info(f"✓ Saved product analytics")
+        logger.info("✓ Saved product analytics")
         
         # Log sample results
         logger.info("\n--- Customer Segment Analysis ---")
@@ -406,17 +406,17 @@ class DataPipeline:
             logger.info("=" * 60)
             
             logger.info("\n--- Pipeline Summary ---")
-            logger.info(f"Bronze Layer:")
+            logger.info("Bronze Layer:")
             logger.info(f"  Customers: {bronze_results['customers_count']:,}")
             logger.info(f"  Transactions: {bronze_results['transactions_count']:,}")
             logger.info(f"  Products: {bronze_results['products_count']:,}")
             
-            logger.info(f"\nSilver Layer:")
+            logger.info("\nSilver Layer:")
             logger.info(f"  Enriched Customers: {silver_results['customers_count']:,}")
             logger.info(f"  Clean Transactions: {silver_results['transactions_count']:,}")
             logger.info(f"  Active Products: {silver_results['products_count']:,}")
             
-            logger.info(f"\nGold Layer:")
+            logger.info("\nGold Layer:")
             logger.info(f"  Customer Analytics: {gold_results['customer_analytics_records']:,} records")
             logger.info(f"  Category Analytics: {gold_results['category_analytics_records']:,} records")
             logger.info(f"  Payment Analytics: {gold_results['payment_analytics_records']:,} records")
@@ -447,7 +447,8 @@ def main():
     pipeline = DataPipeline(config)
     exit_code = pipeline.run()
     
-    sys.exit(exit_code)
+    # Return the exit code instead of calling sys.exit())
+    return exit_code  
 
 
 if __name__ == "__main__":

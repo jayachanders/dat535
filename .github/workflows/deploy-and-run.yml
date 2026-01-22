@@ -39,7 +39,7 @@ jobs:
           
           # Run the basic data pipeline
           echo "=== Starting Basic Data Pipeline ==="
-          python $GITHUB_WORKSPACE/data_pipeline.py
+          python $GITHUB_WORKSPACE/run_pipeline.py data
           
           echo "✓ Basic pipeline completed!"
           echo "Data location: ~/pipeline-data/"
@@ -54,7 +54,7 @@ jobs:
           
           # Run the MapReduce pipeline
           echo "=== Starting MapReduce Pipeline ==="
-          python $GITHUB_WORKSPACE/mapreduce_pipeline.py
+          python $GITHUB_WORKSPACE/run_pipeline.py mapreduce
           
           echo "✓ MapReduce pipeline completed!"
           echo "Data location: ~/mapreduce-pipeline-data/"
@@ -69,7 +69,7 @@ jobs:
           
           # Run the performance optimization pipeline
           echo "=== Starting Performance Optimization Pipeline ==="
-          python $GITHUB_WORKSPACE/performance_pipeline.py
+          python $GITHUB_WORKSPACE/run_pipeline.py performance
           
           echo "✓ Performance pipeline completed!"
           echo "Data location: ~/performance-pipeline-data/"

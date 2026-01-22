@@ -5,26 +5,22 @@ Implements Bronze → Silver → Gold architecture with MapReduce operations
 """
 
 import os
-import sys
 import json
 import logging
 import time
 from datetime import datetime, timedelta
 import random
-from typing import List, Dict, Any, Tuple
-
-import findspark
-findspark.init()
+from typing import List, Dict, Any
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
     col, count, sum as spark_sum, avg, min as spark_min, max as spark_max,
-    round as spark_round, when, lit, concat, desc, explode, split, lower,
-    regexp_replace, trim, initcap, to_timestamp, to_date, hour, current_timestamp,
+    round as spark_round, when, to_timestamp, to_date, hour, current_timestamp,
     unix_timestamp, countDistinct
 )
-from pyspark.sql.window import Window
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, BooleanType
+
+import findspark
+findspark.init()
 
 # Configure logging
 logging.basicConfig(
@@ -209,7 +205,7 @@ class MapReducePipeline:
         valid_records = bronze_df.filter(col("_status") == "valid").count()
         error_records = bronze_df.filter(col("_status") == "parse_error").count()
         
-        logger.info(f"\nBronze Layer Quality Metrics:")
+        logger.info("\nBronze Layer Quality Metrics:")
         logger.info(f"  Total records: {total_records:,}")
         logger.info(f"  Valid records: {valid_records:,}")
         logger.info(f"  Parse errors: {error_records:,}")
@@ -244,7 +240,7 @@ class MapReducePipeline:
         event_counts = event_rdd.reduceByKey(lambda a, b: a + b).collect()
         
         logger.info("\nEvent Type Distribution (MapReduce):")
-        for event_type, count in sorted(event_counts, key=lambda x: x[1], reverse=True):
+        for event_type, event_count in sorted(event_counts, key=lambda x: x[1], reverse=True):
             logger.info(f"  {event_type}: {count:,}")
         
         # Silver layer transformations
@@ -338,7 +334,7 @@ class MapReducePipeline:
         # Save user engagement
         user_engagement_path = os.path.join(self.config.gold_dir, "user_engagement")
         user_engagement.write.mode("overwrite").parquet(user_engagement_path)
-        logger.info(f"✓ Saved user engagement metrics")
+        logger.info("✓ Saved user engagement metrics")
         
         # 2. Event Funnel Analysis
         logger.info("Calculating event funnel metrics...")
@@ -360,7 +356,7 @@ class MapReducePipeline:
         
         funnel_path = os.path.join(self.config.gold_dir, "event_funnel")
         funnel_metrics.write.mode("overwrite").parquet(funnel_path)
-        logger.info(f"✓ Saved funnel analysis")
+        logger.info("✓ Saved funnel analysis")
         
         # 3. Device & Location Analytics (MapReduce pattern)
         logger.info("Calculating device and location analytics using MapReduce...")
@@ -383,7 +379,7 @@ class MapReducePipeline:
         # Save device & location analytics
         device_location_path = os.path.join(self.config.gold_dir, "device_location_analytics")
         device_location_df.write.mode("overwrite").parquet(device_location_path)
-        logger.info(f"✓ Saved device & location analytics")
+        logger.info("✓ Saved device & location analytics")
         
         # 4. Revenue Analysis
         logger.info("Calculating revenue analysis...")
@@ -397,7 +393,7 @@ class MapReducePipeline:
         
         revenue_path = os.path.join(self.config.gold_dir, "revenue_analysis")
         revenue_analysis.write.mode("overwrite").parquet(revenue_path)
-        logger.info(f"✓ Saved revenue analysis")
+        logger.info("✓ Saved revenue analysis")
         
         # Unpersist cached Silver DataFrame
         silver_df.unpersist()
@@ -428,14 +424,19 @@ def run_pipeline():
     gold_results = pipeline.run_gold_layer(silver_results)
     logger.info(f"Gold layer results: {gold_results}")
     
+    return gold_results
 
-if __name__ == "__main__":
+def main() -> int:
+    """Main entry point returning status code for callers"""
     start_time = time.time()
-    
     try:
         run_pipeline()
-    except Exception as e:
-        logger.error(f"Pipeline execution failed: {str(e)}", exc_info=True)
-    finally:
         logger.info(f"Total execution time: {time.time() - start_time:.2f} seconds")
-        logger.info("Pipeline execution completed.")
+        logger.info("MapReduce Pipeline execution completed successfully.")
+        return 0
+    except Exception as e:
+        logger.error(f"MapReduce Pipeline execution failed: {str(e)}", exc_info=True)
+        return 1
+
+if __name__ == "__main__":
+    main()
