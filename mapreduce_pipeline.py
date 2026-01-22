@@ -241,7 +241,7 @@ class MapReducePipeline:
         
         logger.info("\nEvent Type Distribution (MapReduce):")
         for event_type, event_count in sorted(event_counts, key=lambda x: x[1], reverse=True):
-            logger.info(f"  {event_type}: {count:,}")
+            logger.info(f"  {event_type}: {event_count:,}")
         
         # Silver layer transformations
         logger.info("\nApplying Silver layer transformations...")
