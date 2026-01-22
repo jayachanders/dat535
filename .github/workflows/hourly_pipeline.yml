@@ -30,4 +30,4 @@ jobs:
         python $GITHUB_WORKSPACE/run_pipeline.py all
 
         echo ""
-        echo "=== All Pipelines Completed Successfully ===
+        echo "=== All Pipelines Completed Successfully ==="
