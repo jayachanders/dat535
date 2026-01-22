@@ -4,12 +4,11 @@ on:
   workflow_dispatch:
   schedule:
     # Run every day at midnight UTC
-    - cron: "*/5 * * * *" 
+    - cron: "0 0 * * *" 
 
 jobs:
   run-pipeline:
     name: Run PySpark Pipeline
-    # Specifies the self-hosted runner label
     runs-on: self-hosted
     
     steps:
