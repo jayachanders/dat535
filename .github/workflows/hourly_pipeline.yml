@@ -1,0 +1,33 @@
+name: Hourly Data Pipeline
+
+on:
+  schedule:
+    # Runs at minute 0 past every hour
+    - cron: '0 * * * *'
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  run-pipeline:
+    name: Run PySpark Pipeline
+    # Specifies the self-hosted runner label
+    runs-on: self-hosted
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Pipeline
+      env:
+        SPARK_HOME: /opt/spark
+        JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+      run: |
+        # Activate the environment
+        source ~/spark-env/bin/activate
+          
+        # Run the pipeline
+        echo "Starting Hourly Pipeline execution..."
+        python $GITHUB_WORKSPACE/run_pipeline.py all
+
+        echo ""
+        echo "=== All Pipelines Completed Successfully ===
