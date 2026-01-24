@@ -1,11 +1,13 @@
 name: Hourly Data Pipeline
 
 on:
-  schedule:
-    # Runs at minute 0 past every hour
-    - cron: '0 * * * *'
   # Allow manual trigger for testing
   workflow_dispatch:
+  schedule:
+    # Runs at minute 0 past every hour
+    # - cron: '0 * * * *'
+    # Runes every 6 hours
+    - cron: '0 */6 * * *'
 
 jobs:
   run-pipeline:
