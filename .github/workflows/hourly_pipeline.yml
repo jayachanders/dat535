@@ -6,8 +6,8 @@ on:
   schedule:
     # Runs at minute 0 past every hour
     # - cron: '0 * * * *'
-    # Runes every 2 hours
-    - cron: '*/10 * * * *'
+    # Runes every 6 hours
+    - cron: '0 */6 * * *'
 
 jobs:
   run-pipeline:
