@@ -1,19 +1,22 @@
-# Lab 1.2 — CI/CD Pipelines: Dev/Prod with GitHub Actions
+# Project — CI/CD Pipelines: Dev/Prod with GitHub Actions
 
 ## Learning Objectives
 
 - Understand Dev/Prod environment separation
 - Configure GitHub Environments with approval gates
-- Work with the dev/main branch strategy from VSCode
+- Work with the dev/main branch strategy from VS Code
+- Execute PySpark data pipelines on a self-hosted runner
 
 ---
 
 ## The Dev/Prod Model
 
 1. Work on `dev` branch locally or on the cluster
-2. Push to `dev` — the `.github/workflows/dat535-dev.yml` pipeline runs automatically
+2. Push to `dev` — [.github/workflows/dat535-dev.yml](.github/workflows/dat535-dev.yml) runs automatically on the self-hosted runner
 3. Open a Pull Request from `dev` to `main` to release
-4. After merge, `.github/workflows/dat535-prod.yml` runs and requires approval for deployment
+4. After merge, [.github/workflows/dat535-prod.yml](.github/workflows/dat535-prod.yml) runs on the `main` environment and requires manual deployment approval
+
+---
 
 ## Part A: Configure GitHub Environments
 
@@ -21,14 +24,14 @@
 
 1. Go to your GitHub repo → **Settings** → **Environments** → **New environment**
 2. Name it `dev` → **Configure environment**
-3. Leave "Protection rules" empty (dev auto-deploys on every push)
+3. Leave "Deployment protection rules" empty (dev auto-deploys on every push)
 
-### 2. Create the `prod` environment (main)
+### 2. Create the `prod` environment (`main`)
 
-1. **New environment** → name it the prod environment `main`
+1. **New environment** → name it `main`
 2. Under **Deployment protection rules** → enable **Required reviewers**
-3. Add yourself and / or group partner as a reviewer
-4. Save — now every prod deploy requires a manual approval click
+3. Add yourself and/or group partners as reviewers
+4. Save — now every production deployment requires a manual approval click in GitHub Actions
 
 ---
 
@@ -37,6 +40,7 @@
 ```bash
 # Day-to-day development (dev branch) 
 git checkout -b dev
+
 # work in VSCode
 git add .
 # if you have made changes in lab2
@@ -52,7 +56,7 @@ git push origin dev
 1. Open a Pull Request on GitHub: dev → main
 2. Reviewer reviews the diff and approves
 3. Merge the PR
-    → GitHub Actions prod pipeline starts
+    → GitHub Actions production pipeline starts
     → Reviewer is asked to approve the deployment
     → After approval, prod pipeline runs
 
@@ -78,18 +82,16 @@ Click a run to view logs inline in VSCode
 
 ## How the Pipeline Code is Environment-Aware
 
-The pipeline scripts read the environment from:
+Both Dev and Production pipelines run on self-hosted runners where Apache Spark and Java are pre-installed.
 
---env argument: python run_pipeline.py lab2 --env prod
-Environment variable: DAT535_ENV=prod python run_pipeline.py lab2
+Execution commands in GitHub Actions workflows:
 
 ```bash
-class Lab2Pipeline:
-    def __init__(self, env: str = "dev"):
-        self.env = env
-        # dev writes to ~/spark-lab-data/dev/lab2/
-        # prod writes to ~/spark-lab-data/prod/lab2/
-        self.base_dir = f"~/spark-lab-data/{env}/lab2"
+# Activate Spark Python environment
+source ~/spark-env/bin/activate
+
+# Execute all pipeline labs
+python $GITHUB_WORKSPACE/run_pipeline.py all
 ```
 
 ---
@@ -98,11 +100,13 @@ class Lab2Pipeline:
 
 1. Create `dev` branch and push a trivial change to trigger the dev pipeline
 
-    git checkout -b dev && git push -u origin dev
+    ```bash
+    git checkout -b dev
+    git push -u origin dev
+    ```
 
-    Add a `print("Hello from dev pipeline")` line to `dat535/lab2/lab2_pipeline.py`
-
-    Commit and push to dev — watch the dev pipeline run
+    Add a log statement or update a comment in `lab2_pipeline.py`.
+    Commit and push to dev — watch the dev pipeline run on the Actions tab.
 
 2. Open a PR and merge to `main` to trigger the prod pipeline (approval required)
 

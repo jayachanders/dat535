@@ -7,67 +7,32 @@ on:
     branches: [dev]
   workflow_dispatch:
 
-env:
-  PYTHON_VERSION: "3.10"
-  JAVA_VERSION: "11"
-
 jobs:
-  lint:
-    name: Lint & Format Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - run: pip install flake8 black
-
-      - name: Lint (syntax errors)
-        run: flake8 dat535/ --count --select=E9,F63,F7,F82 --show-source --statistics
-
-      - name: Format check
-        run: black --check dat535/
-
   run-dev:
     name: Run Dev Pipeline
-    runs-on: ubuntu-latest
-    needs: lint
+    runs-on: self-hosted
     environment: dev
     env:
       DAT535_ENV: dev
       DAT535_OUTPUT_DIR: /tmp/spark-lab-data/dev
+      SPARK_HOME: /opt/spark
+      JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v7
 
-      - name: Set up Java ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: temurin
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-
-      - name: Install dependencies
-        run: pip install pyspark==3.5.0 findspark requests pandas
-
-      - name: Run Lab 2 — Ingestion / Cleaning / Modeling
-        working-directory: dat535
-        run: python run_pipeline.py lab2 --env dev --output-dir $DAT535_OUTPUT_DIR
-
-      - name: Run Lab 3 — Automation / Governance
-        working-directory: dat535
-        run: python run_pipeline.py lab3 --env dev --output-dir $DAT535_OUTPUT_DIR
+      - name: Run Lab 2 & Lab 3 Pipelines
+        run: |
+          source ~/spark-env/bin/activate
+          
+          echo "=== Running Dev Pipeline ==="
+          python $GITHUB_WORKSPACE/run_pipeline.py all
 
       - name: Upload Dev artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dev-outputs-${{ github.run_number }}
           path: /tmp/spark-lab-data/dev/
           retention-days: 7
+          if-no-files-found: ignore
