@@ -1,23 +1,25 @@
-name: Hourly Data Pipeline
+name: Daily Data Pipeline
 
 on:
-  # Allow manual trigger for testing
   workflow_dispatch:
+  push:
+    branches: [ main ]
   schedule:
+    # Run every day at midnight UTC
+    #- cron: "0 0 * * *"
     # Runs at minute 0 past every hour
-    # - cron: '0 * * * *'
-    # Runes every 6 hours
-    - cron: '0 */6 * * *'
+    #- cron: '0 * * * *'
+    # Runs every 6 hours
+    - cron: '0 */6 * * *' 
 
 jobs:
   run-pipeline:
     name: Run PySpark Pipeline
-    # Specifies the self-hosted runner label
     runs-on: self-hosted
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     - name: Run Pipeline
       env:
@@ -28,7 +30,7 @@ jobs:
         source ~/spark-env/bin/activate
           
         # Run the pipeline
-        echo "Starting Hourly Pipeline execution..."
+        echo "=== Starting Data Pipeline Execution ==="
         python $GITHUB_WORKSPACE/run_pipeline.py all
 
         echo ""

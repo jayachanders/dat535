@@ -1,367 +1,258 @@
-# DAT535 Spark Data Pipelines
+# DAT535
 
-Production-ready Spark pipelines demonstrating the Medallion Architecture (Bronze → Silver → Gold), MapReduce patterns, and performance optimization on a private OpenStack cluster.
+## Spark Lab Pipelines
 
-## Overview
+Spark pipelines for learning distributed data processing.
 
-This project contains **three complementary pipelines** that demonstrate enterprise data processing patterns using PySpark with automated CI/CD deployment via GitHub Actions:
-
-1. **Data Pipeline** (`data_pipeline.py`): Basic Medallion Architecture implementation with customer/transaction/product data
-2. **MapReduce Pipeline** (`mapreduce_pipeline.py`): Advanced event stream processing demonstrating MapReduce patterns
-3. **Performance Pipeline** (`performance_pipeline.py`): Performance optimization techniques with window functions, caching, and benchmarking
-
-All pipelines run automatically on every push to the `main` branch.
-
-## Pipelines
-
-### 1. Data Pipeline (Basic)
-
-Implements classic data warehouse patterns with structured data.
-
-**Data Location**: `~/pipeline-data/`
-
-#### Architecture Layers
+### Lab Structure
 
 ```text
-Bronze Layer (Raw Data)
-    ├── customers.parquet      # Raw customer data
-    ├── transactions.parquet   # Raw transaction logs  
-    └── products.parquet       # Raw product catalog
-
-Silver Layer (Cleaned & Enriched)
-    ├── customers_enriched.parquet    # Enriched with segments, calculated fields
-    ├── transactions_clean.parquet    # Filtered completed transactions
-    └── products_active.parquet       # Active products only
-
-Gold Layer (Business Aggregations)
-    ├── customer_analytics.parquet    # Customer segment analysis
-    ├── category_analytics.parquet    # Product category performance
-    ├── payment_analytics.parquet     # Payment method usage
-    ├── device_analytics.parquet      # Device/browser statistics
-    └── product_analytics.parquet     # Product inventory analysis
+.
+├── README.md                    # This file
+├── run_pipeline.py              # Pipeline orchestrator (lab2 -> lab3)
+├── lab2_pipeline.py             # Lab 2: Fundamentals + MapReduce + Medallion Architecture
+├── lab3_pipeline.py             # Lab 3: Window functions, joins, UDFs, streaming, production patterns
+├── lab1_install-spark.sh        # Lab 1: Bash script to install Spark, Java, Python 3.11 & packages
+├── lab2_spark_fundamentals.ipynb# Lab 2 notebook: Fundamentals + MapReduce + Medallion Architecture
+├── lab3_advanced_spark.ipynb    # Lab 3 notebook: Window functions, joins, UDFs, streaming, production patterns
+└── .github/
+    └── workflows/
+        └── pipeline.yml         # CI/CD pipeline workflow for self-hosted runner
 ```
 
-**Dataset**: 10K customers, 50K transactions, 200 products
+### Overview
 
-### 2. MapReduce Pipeline (Advanced)
+The Jupyter notebooks in this folder teach Apache Spark end-to-end across **two consolidated labs**
+that share **one single e-commerce clickstream dataset** (generated once in Lab 2, reused by Lab 3):
 
-Demonstrates MapReduce patterns with event stream processing.
+| Lab   | Notebook                        | Key Concepts                                                                                                                                                                                                                                                 |
+| ----- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Lab 2 | `lab2_spark_fundamentals.ipynb` | SparkSession & architecture, RDD/DataFrame/SQL/pandas conversions, column ops & type casting, filtering/sorting/aggregations, Parquet/CSV/JSON I/O, MapReduce with RDDs, the Medallion Architecture (Bronze/Silver/Gold)                                     |
+| Lab 3 | `lab3_advanced_spark.ipynb`     | Window functions, partitioning strategies, caching/persistence, every join type + broadcast joins, query optimization, UDFs vs pandas UDFs vs built-ins, Structured Streaming basics, production patterns (incremental processing, data quality, SCD Type 2) |
 
-**Data Location**: `~/mapreduce-pipeline-data/`
+The `.py` pipeline scripts (`lab2_pipeline.py`, `lab3_pipeline.py`, `run_pipeline.py`) mirror the same
+two-lab structure as the notebooks: `lab2_pipeline.py` generates the shared dataset and builds the
+Medallion pipeline, and `lab3_pipeline.py` loads Lab 2's Silver output and runs the advanced/production
+patterns. Run Lab 2 before Lab 3 (or use `python run_pipeline.py all`).
 
-#### Architecture Layers
+### Quick Start
+
+1. **Install Prerequisites (Lab 1)**:
+
+    Complete the `lab1_install-spark.sh` script on Ubuntu VM for clearting Spark.
+
+   ```bash
+   chmod +x lab1_install-spark.sh
+   ./lab1_install-spark.sh
+   source ~/spark-env/bin/activate
+   ```
+
+2. Run Pipeline Scripts:
+
+    ```bash
+    # Run individual labs
+    python run_pipeline.py lab2
+    python run_pipeline.py lab3
+
+    # Run all labs (Lab 2 then Lab 3)
+    python run_pipeline.py all
+    ```
+
+### Lab Details
+
+#### Lab 2: Spark Fundamentals & the Medallion Architecture
+
+**Learning Objectives:**
+
+- Create and configure a SparkSession; understand driver/executor/task/partition
+- Convert data between RDD, DataFrame, SQL views and pandas
+- Perform DataFrame operations (select, withColumn, cast, filter, sort)
+- Run aggregations and groupBy operations
+- Read/write data in multiple formats (Parquet, CSV, JSON, partitioned)
+- Apply MapReduce patterns directly with RDDs (map, flatMap, reduceByKey)
+- Build a Bronze -> Silver -> Gold pipeline with data-quality quarantining
+
+**Output (shared with Lab 3):**
 
 ```text
-Bronze Layer (Raw Events)
-    └── raw_events.parquet            # Raw event logs with parse error handling
-
-Silver Layer (Cleaned Events)
-    └── cleaned_events.parquet        # Typed and validated events
-
-Gold Layer (Analytics)
-    ├── user_engagement.parquet       # User activity and engagement metrics
-    ├── event_funnel.parquet          # Conversion funnel analysis
-    ├── device_location_analytics.parquet  # Device-location combinations
-    ├── revenue_analytics.parquet     # Purchase and revenue metrics
-    └── hourly_patterns.parquet       # Temporal activity patterns
-```
-
-**Dataset**: 100K events, 5K users, 500 products
-
-**MapReduce Patterns Demonstrated**:
-- Word Count (classic MapReduce)
-- Group By Key (aggregations)
-- Join operations
-- Map-side and Reduce-side processing
-
-### 3. Performance Pipeline (Advanced)
-
-Demonstrates Spark performance optimization techniques and benchmarking.
-
-**Data Location**: `~/performance-pipeline-data/`
-
-#### Architecture Layers
-
-```text
-Bronze Layer (Raw Sessions)
-    └── sessions.parquet              # Raw session event data
-
-Silver Layer (Enriched)
-    └── enriched_sessions.parquet     # Advanced transformations with window functions
-
-Gold Layer (Analytics)
-    ├── user_analytics.parquet        # User behavior metrics
-    ├── session_analytics.parquet     # Session-level insights with broadcast joins
-    ├── daily_metrics/                # Date-partitioned temporal analytics
-    │   ├── event_date=2026-01-01/
-    │   ├── event_date=2026-01-02/
-    │   └── ...
-    └── cohort_analysis.parquet       # User cohort retention analysis
-
-Benchmarks
-    └── performance_metrics.parquet   # Pipeline performance measurements
-```
-
-**Dataset**: 10K sessions, 2K users, 30 days of data
-
-**Performance Features**:
-- Window functions (lag, running totals, moving averages, rank)
-- Broadcast join optimization for small dimensions
-- Date partitioning for efficient queries
-- Caching strategy demonstrations
-- Query optimization benchmarks (filter combining, join strategies)
-- Performance metric collection
-
-## Features
-
-- **Automated Data Generation**: Creates realistic sample datasets
-- **Data Quality Checks**: Null value detection, duplicate analysis, completeness reports
-- **Data Enrichment**: Calculated fields, customer segmentation, temporal features
-- **Business Analytics**: Comprehensive aggregations for business insights
-- **Performance Optimization**: Window functions, broadcast joins, caching strategies
-- **Performance Benchmarking**: Automated performance comparison tests
-- **CI/CD Integration**: Automated deployment and execution via GitHub Actions
-- **Logging**: Comprehensive logging at every pipeline stage
-
-## CI/CD Workflow
-
-### Automated Deployment
-
-Every push to the `main` branch triggers:
-
-1. **Environment Setup**: Ensures virtual environment with all dependencies
-2. **Code Deployment**: Syncs latest code to OpenStack VM
-3. **Pipeline Execution**: Runs all three Spark pipelines sequentially
-4. **Data Output**: Stores results in respective directories
-
-### Workflow File
-
-See [`.github/workflows/deploy-and-run.yml`](.github/workflows/deploy-and-run.yml)
-
-## Local Execution
-
-### Prerequisites
-
-- Python 3.11+
-- Apache Spark 3.5.0
-- Java 8
-- Virtual environment with PySpark, findspark
-
-### Running Individual Pipelines
-
-```bash
-# Clone the repository
-git clone https://github.com/jayachanders/dat535.git
-cd dat535
-
-# Activate Spark environment
-source ~/spark-env/bin/activate
-
-# Run the basic data pipeline
-python data_pipeline.py
-
-# OR run the MapReduce pipeline
-python mapreduce_pipeline.py
-
-# OR run the performance pipeline
-python performance_pipeline.py
-
-# OR run all pipelines sequentially
-python run_pipeline.py all
-```
-
-### Using the Pipeline Runner
-
-The `run_pipeline.py` script allows flexible execution:
-
-```bash
-# Run only the basic data pipeline
-python run_pipeline.py data
-
-# Run only the MapReduce pipeline
-python run_pipeline.py mapreduce
-
-# Run only the performance pipeline
-python run_pipeline.py performance
-
-# Run all pipelines
-python run_pipeline.py all
-```
-
-### Configuration
-
-Each pipeline has its own configuration class:
-
-**Data Pipeline** (`DataPipelineConfig`):
-```python
-config = DataPipelineConfig()
-config.num_customers = 10000      # Adjust dataset size
-config.num_transactions = 50000
-config.num_products = 200
-config.data_dir = "~/pipeline-data"
-```
-
-**MapReduce Pipeline** (`MapReducePipelineConfig`):
-```python
-config = MapReducePipelineConfig()
-config.num_events = 100000        # Event stream size
-config.num_users = 5000
-config.num_products = 500
-config.data_dir = "~/mapreduce-pipeline-data"
-```
-
-**Performance Pipeline** (`PerformancePipelineConfig`):
-```python
-config = PerformancePipelineConfig()
-config.num_sessions = 10000       # Session data size
-config.num_users = 2000
-config.days_of_data = 30
-config.data_dir = "~/performance-pipeline-data"
-```
-
-## Data Output
-
-All data is stored in Parquet format:
-
-```tree
-~/pipeline-data/              # Basic pipeline output
-├── bronze/
+~/spark-lab-data/shared/
+├── bronze/events/
 ├── silver/
+│   ├── events/
+│   └── quarantine/
 └── gold/
+    ├── daily_metrics/
+    ├── user_metrics/
+    ├── product_metrics/
+    └── category_metrics/
 
-~/mapreduce-pipeline-data/    # MapReduce pipeline output
-├── bronze/
-├── silver/
-└── gold/
-
-~/performance-pipeline-data/  # Performance pipeline output
-├── bronze/
-├── silver/
-├── gold/
-└── benchmarks/              # Performance metrics
+~/spark-lab-data/lab2/            # scratch I/O examples (parquet/csv/json/partitioned)
 ```
 
-## Pipeline Execution Flow
+#### Lab 3: Advanced Spark & Production Patterns
 
-1. **Bronze Layer** (Raw Ingestion)
-   - Generate sample datasets
-   - Save as Parquet (schema-preserved, compressed)
-   
-2. **Silver Layer** (Cleansing & Enrichment)
-   - Data quality checks
-   - Customer segmentation
-   - Filter completed transactions only
-   - Active products filtering
-   - Add computed columns
+**Learning Objectives:**
 
-3. **Gold Layer** (Business Aggregations)
-   - Customer segment analysis by city
-   - Product category revenue analysis
-   - Payment method statistics
-   - Device/browser usage patterns
-   - Product inventory by supplier
+- Master window functions (ranking, lag/lead, running totals, moving averages)
+- Understand partitioning strategies and partition pruning
+- Implement caching/persistence and compare storage levels
+- Perform every join type (inner/left/right/full/semi/anti) and optimize with broadcast joins
+- Apply query optimization techniques (filter/column pushdown, execution plans)
+- Compare UDFs, pandas UDFs and built-in functions
+- Build a minimal Structured Streaming pipeline with a windowed aggregation
+- Learn production patterns: incremental processing, data quality checks, SCD Type 2, safe aggregation
 
-## Key Metrics
+**Input:** loads the Silver-layer dataset produced by Lab 2 from `~/spark-lab-data/shared/silver/events`
+(run Lab 2 first).
 
-The pipeline generates the following business metrics:
+**Output:**
 
-- **Customer Segments**: Premium, Gold, Silver, Bronze (by spending)
-- **Revenue Analysis**: By category, segment, payment method
-- **Customer Lifetime Value**: Average order value, total spent
-- **Inventory Analytics**: Stock levels by category and supplier
-- **Channel Analytics**: Device/browser transaction patterns
-
-## Logging
-
-Comprehensive logging includes:
-- Pipeline start/end timestamps
-- Record counts at each layer
-- Data quality check results
-- Performance metrics
-- Error handling with stack traces
-
-Example output:
-```
-2026-01-14 12:00:00 - INFO - STARTING DATA PIPELINE EXECUTION
-2026-01-14 12:00:05 - INFO - BRONZE LAYER: Raw Data Ingestion
-2026-01-14 12:00:15 - INFO - ✓ Saved customers to: ~/pipeline-data/bronze/customers
-2026-01-14 12:00:20 - INFO - SILVER LAYER: Data Cleansing and Enrichment
-2026-01-14 12:00:35 - INFO - GOLD LAYER: Business Aggregations
-2026-01-14 12:00:45 - INFO - PIPELINE EXECUTION COMPLETED SUCCESSFULLY
+```text
+~/spark-lab-data/lab3/
+└── partitioned_data/
+    ├── no_partition/
+    ├── date_partition/
+    └── multi_partition/
 ```
 
-## Self-Hosted Runner Setup
+### E-Commerce Dataset
 
-This pipeline runs on a GitHub self-hosted runner on a private OpenStack VM:
+Both labs use **one consistent e-commerce clickstream dataset**, generated once in Lab 2 (fixed
+random seed) with ~3% intentionally malformed records to give the Medallion pipeline real data-quality
+issues to catch:
+
+| Field        | Type             | Description               |
+| ------------ | ---------------- | ------------------------- |
+| event_id     | String           | Unique event identifier   |
+| timestamp    | String/Timestamp | Event time                |
+| user_id      | Integer          | User identifier           |
+| event_type   | String           | page_view, purchase, etc. |
+| device       | String           | mobile, desktop, tablet   |
+| country      | String           | Country code              |
+| product_id   | String           | Product identifier        |
+| category     | String           | Product category          |
+| price        | Double           | Product price             |
+| quantity     | Integer          | Purchase quantity         |
+| total_amount | Double           | Total purchase amount     |
+
+**Dataset scale:** 6,000 raw events, generated once in Lab 2 and reused (via the shared Silver layer)
+in Lab 3.
+
+### Running on a Cluster
+
+For running on a Spark cluster (e.g., YARN, Kubernetes):
 
 ```bash
-# On OpenStack VM For production deployment:
-cd ~/actions-runner
-./config.sh --url https://github.com/jayachanders/dat535 --token YOUR_TOKEN
-# This will not release the terminal, so no need to run
-# ./run.sh
+spark-submit \
+    --master yarn \
+    --deploy-mode client \
+    --executor-memory 4g \
+    --num-executors 4 \
+    run_pipeline.py all
+```
 
-sudo ./svc.sh install
+### Spark Troubleshooting
+
+#### Common Issues
+
+1. **Java not found**
+
+   ```bash
+   export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+   ```
+
+2. **Spark not found**
+
+   ```bash
+   export SPARK_HOME=/opt/spark
+   ```
+
+3. **Out of memory**
+
+   ```python
+   .config("spark.driver.memory", "4g")
+   .config("spark.executor.memory", "4g")
+   ```
+
+## GitHub Actions CI/CD Guide
+
+The repo contains the automated workflows for the DAT535 project. These workflows use GitHub Actions to schedule data pipelines, execute Spark jobs, and deploy code updates.
+
+**Important**: These pipelines are designed to execute on **self-hosted runners** configured with Apache Spark and Java.
+
+### Available Workflows
+
+We have configured the following automated processes:
+
+#### Pipeline ([pipeline.yml](.github/workflows/pipeline.yml))
+
+- **Triggers**:
+  - Push to the main branch.
+  - Scheduled cron job (every 6 hours: `0 */6 * * *`).
+  - Manual dispatch (workflow_dispatch).
+
+- **Key Tasks**:
+  - Checks out the repository code.
+  - Activates the Python environment (`source ~/spark-env/bin/activate`).
+  - Sets environment variables (`SPARK_HOME=/opt/spark`, `JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64`).
+  - Executes all pipelines via `python $GITHUB_WORKSPACE/run_pipeline.py all`.
+
+### Infrastructure & Environment Setup
+
+These workflows use `runs-on: self-hosted` targeting self-hosted infrastructure equipped with PySpark.
+
+#### Self-Hosted Runner Requirements
+
+The runner environment requires the following predefined paths and dependencies:
+
+- **Python Virtual Environment**: `~/spark-env/`
+- **Spark Home**: `/opt/spark`
+- **Java Home**: `/usr/lib/jvm/java-8-openjdk-amd64`
+
+**⚠️ Note for Personal Forks:**
+If you fork this repository to your personal GitHub account, you will need to set up a self-hosted runner with Spark and Java installed.
+
+### Setting up a Self-Hosted Runner
+
+To execute these pipelines on your own infrastructure (e.g., your VM), follow these steps:
+
+#### Step 1: Register and Start Runner
+
+1. Go to your repository on GitHub.
+2. Navigate to **Settings** > **Actions** > **Runners** > **New self-hosted runner**.
+3. Select the operating system and architecture matching your runner host.
+4. Execute the configuration commands provided by GitHub on the VM:
+
+```bash
+# Create a folder
+mkdir actions-runner && cd actions-runner
+
+# Download the runner package (Get the specific link for your OS from GitHub UI > Settings > Actions > Runners)
+curl -o actions-runner-osx-x64-2.331.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.331.0/actions-runner-osx-x64-2.331.0.tar.gz
+
+# Extract
+tar xzf ./actions-runner-osx-x64-2.331.0.tar.gz
+
+# Configure (You will need the token from the GitHub UI)
+./config.sh --url https://github.com/OWNER/REPO --token YOUR_TOKEN
+
+# Start the runner
+# To keep the runner alive after closing the terminal, install as a service:
+sudo ./svc.sh install 
 sudo ./svc.sh start
 ```
 
-## Performance Considerations
+#### Step 2: Triggering Manually
 
-- **Parquet Format**: Columnar storage for fast analytical queries
-- **Partitioning**: Adjustable via `spark.sql.shuffle.partitions`
-- **Adaptive Query Execution**: Enabled for dynamic optimization
-- **Coalesce**: Used for small file consolidation
+You can test a pipeline without waiting for the schedule:
 
-## Troubleshooting
+1. Go to the **Actions** tab.
+2. Select a workflow (e.g., "Pipeline") from the left sidebar.
+3. Click the **Run workflow** dropdown button on the right.
+4. Click **Run workflow**.
 
-### Virtual Environment Issues
-If dependencies are missing, the workflow auto-recreates the venv:
-```bash
-rm -rf ~/spark-env
-python3 -m venv ~/spark-env
-```
+### CI/CD Troubleshooting
 
-### Check Pipeline Output
-```bash
-ls -lh ~/pipeline-data/bronze/
-ls -lh ~/pipeline-data/silver/
-ls -lh ~/pipeline-data/gold/
-```
-
-### Verify Data
-```python
-from pyspark.sql import SparkSession
-spark = SparkSession.builder.appName("Verify").getOrCreate()
-
-# Read Gold layer analytics
-df = spark.read.parquet("~/pipeline-data/gold/customer_analytics")
-df.show()
-```
-
-## Learning Objectives
-
-This pipeline demonstrates:
-- ✅ Medallion Architecture implementation
-- ✅ Data quality and governance practices  
-- ✅ Spark DataFrame API and SQL
-- ✅ MapReduce patterns and distributed processing
-- ✅ Window functions and advanced analytics
-- ✅ Performance optimization techniques (caching, broadcast joins, partitioning)
-- ✅ Performance benchmarking and monitoring
-- ✅ CI/CD for data pipelines
-- ✅ Production logging and monitoring
-- ✅ File format optimization (Parquet)
-- ✅ Business analytics generation
-
-## Next Steps
-
-- Add incremental processing (date-based partitions)
-- Implement data versioning (Delta Lake)
-- Add data validation rules (Great Expectations)
-- Create visualization dashboards (Superset/Grafana)
-- Add alerting for data quality issues
-- Implement CDC (Change Data Capture)
-
-## License
-
-Educational project for DAT535 course.
+- **Virtual Environment Not Found**: Ensure `~/spark-env/bin/activate` exists on the self-hosted runner.
+- **Java / Spark Path Mismatch**: Verify `JAVA_HOME` and `SPARK_HOME` paths on your runner match the environment settings.
+- **Permission Denied**: If `run_pipeline.py` fails to run, make it executable via `git update-index --chmod=+x run_pipeline.py`.
