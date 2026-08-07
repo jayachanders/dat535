@@ -22,13 +22,21 @@ Usage:
     python run_pipeline.py lab2
 """
 
-import os
-import sys
-import json
 import logging
+import json
+import os
+import random
+import sys
 import time
 from datetime import datetime, timedelta
-import random
+
+try:
+    import findspark
+except ImportError:
+    findspark = None
+
+if findspark is not None:
+    findspark.init()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -39,14 +47,10 @@ logger = logging.getLogger(__name__)
 try:
     from pyspark.sql import SparkSession
     from pyspark.sql.functions import (
-        col, lit, when, count, sum as spark_sum, avg,
+        col, lit, when, count, sum as spark_sum,
         min as spark_min, max as spark_max, round as spark_round,
-        desc, asc, to_timestamp, to_date, hour, dayofweek,
-        lower, upper, trim, countDistinct, collect_list, first
-    )
-    from pyspark.sql.types import (
-        StructType, StructField, StringType, IntegerType,
-        DoubleType, TimestampType, BooleanType
+        desc, to_timestamp, to_date, hour, dayofweek,
+        lower, upper, trim, countDistinct, first
     )
 except ImportError as e:
     logger.error(f"PySpark import failed: {e}")

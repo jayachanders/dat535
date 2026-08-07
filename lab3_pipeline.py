@@ -24,10 +24,19 @@ Usage:
     python run_pipeline.py lab3
 """
 
+import logging
 import os
 import sys
-import logging
 import time
+from importlib.util import find_spec
+
+if find_spec("findspark") is not None:
+    import findspark
+else:
+    findspark = None
+
+if findspark is not None:
+    findspark.init()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -35,17 +44,34 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+if find_spec("pyspark") is None:
+    logger.error("PySpark import failed: package 'pyspark' is not installed")
+    sys.exit(1)
+
 try:
+    from pyspark import StorageLevel
     from pyspark.sql import SparkSession
     from pyspark.sql.functions import (
-        col, lit, when, count, sum as spark_sum, avg,
-        round as spark_round, desc, asc, unix_timestamp,
-        countDistinct, lag, lead, row_number, rank, dense_rank, ntile,
-        broadcast, udf, pandas_udf, window as tumbling_window
+        avg,
+        broadcast,
+        col,
+        count,
+        dense_rank,
+        desc,
+        lag,
+        lead,
+        ntile,
+        pandas_udf,
+        rank,
+        round as spark_round,
+        row_number,
+        sum as spark_sum,
+        udf,
+        when,
+        window as tumbling_window,
     )
-    from pyspark.sql.window import Window
     from pyspark.sql.types import DoubleType, StringType
-    from pyspark import StorageLevel
+    from pyspark.sql.window import Window
 except ImportError as e:
     logger.error(f"PySpark import failed: {e}")
     sys.exit(1)
@@ -355,7 +381,7 @@ class Lab3Pipeline:
         results['python_udf_time'] = time.time() - start_time
 
         try:
-            import pandas as pd  # noqa: F401
+            import pandas as pd
 
             @pandas_udf(DoubleType())
             def apply_discount(amount: "pd.Series") -> "pd.Series":
@@ -398,7 +424,7 @@ class Lab3Pipeline:
             row_count = self.spark.sql("SELECT * FROM windowed_stream_demo").count()
             results['streaming_windows_captured'] = row_count
             logger.info(f"Captured {row_count} streaming windows")
-        except Exception as e:
+        except (TimeoutError, RuntimeError, OSError) as e:
             logger.warning(f"Structured Streaming demo skipped/failed: {e}")
             results['streaming_windows_captured'] = None
 
