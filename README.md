@@ -17,7 +17,9 @@ Spark pipelines for learning distributed data processing.
 ├── lab3_advanced_spark.ipynb    # Lab 3 notebook: Window functions, joins, UDFs, streaming, production patterns
 └── .github/
     └── workflows/
-        └── pipeline.yml         # CI/CD pipeline workflow for self-hosted runner
+        ├── pipeline.yml         # Scheduled & dispatch pipeline workflow
+        ├── dat535-dev.yml       # Dev branch CI pipeline workflow
+        └── dat535-prod.yml      # Main branch production deployment workflow
 ```
 
 ### Overview
