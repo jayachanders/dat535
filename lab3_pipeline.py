@@ -384,14 +384,14 @@ class Lab3Pipeline:
             import pandas as pd
 
             @pandas_udf(DoubleType())
-            def apply_discount(amount: "pd.Series") -> "pd.Series":
+            def apply_discount(amount: pd.Series) -> pd.Series:
                 return amount * 0.9
 
             start_time = time.time()
             purchase_events.withColumn("discounted_amount", apply_discount(col("total_amount"))).count()
             results['pandas_udf_time'] = time.time() - start_time
-        except ImportError:
-            logger.warning("pandas/pyarrow not available - skipping pandas UDF demo")
+        except Exception as e:
+            logger.warning(f"pandas UDF demo skipped/failed: {e}")
             results['pandas_udf_time'] = None
 
         logger.info(f"UDF comparison results: {results}")
